@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>La Aventura en el Gym: José y Daniel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --primary-yellow: #facc15;
+            --primary-yellow-dark: #ca8a04;
+            --accent-blue: #2563eb;
+            --accent-red: #dc2626;
+            --panel-bg: rgba(15, 23, 42, 0.92);
+            --border-comic: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            max-height: 800px;
+            background: #1e293b;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+            overflow: hidden;
+            border: 4px solid var(--border-comic);
+        }
+
+        @media (min-width: 768px) {
+            #game-wrapper {
+                width: 95vw;
+                height: 90vh;
+                border-radius: 20px;
+            }
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Barra superior HUD */
+        #top-bar {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .badge-act {
+            background: #ffffff;
+            color: #000000;
+            font-family: 'Bangers', cursive;
+            font-size: 1.3rem;
+            letter-spacing: 1.5px;
+            padding: 6px 16px;
+            border-radius: 12px;
+            border: 3px solid #000;
+            box-shadow: 4px 4px 0px #000;
+            pointer-events: auto;
+        }
+
+        #sound-btn {
+            background: #334155;
+            color: #fff;
+            border: 3px solid #000;
+            border-radius: 12px;
+            padding: 8px 14px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            pointer-events: auto;
+            transition: transform 0.1s ease, background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 800;
+        }
+
+        #sound-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        /* HUD de Minijuegos (Contador y Barra de Esfuerzo) */
+        #minigame-hud {
+            position: absolute;
+            top: 72px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 20;
+            width: 90%;
+            max-width: 420px;
+            pointer-events: none;
+        }
+
+        .rep-counter-box {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 4px solid #000;
+            border-radius: 16px;
+            padding: 8px 24px;
+            box-shadow: 5px 5px 0px #000;
+            text-align: center;
+        }
+
+        .rep-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            font-weight: 800;
+        }
+
+        .rep-value {
+            font-family: 'Bangers', cursive;
+            font-size: 2.2rem;
+            color: var(--primary-yellow);
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        #hold-warning {
+            background: #ef4444;
+            color: #fff;
+            font-family: 'Bangers', cursive;
+            font-size: 1.35rem;
+            letter-spacing: 1px;
+            padding: 6px 18px;
+            border-radius: 999px;
+            border: 3px solid #000;
+            box-shadow: 4px 4px 0px #000;
+            animation: pulseWarning 0.65s infinite alternate;
+            display: none;
+            text-align: center;
+        }
+
+        @keyframes pulseWarning {
+            from { transform: scale(1); background-color: #ef4444; }
+            to { transform: scale(1.07); background-color: #f97316; }
+        }
+
+        /* Panel inferior de narrativa y controles */
+        #story-panel {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 94%;
+            max-width: 860px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(8px);
+            border: 4px solid #000000;
+            border-radius: 20px;
+            padding: 18px 22px;
+            box-shadow: 0 10px 0px #000000;
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: opacity 0.3s ease;
+        }
+
+        @media (min-width: 768px) {
+            #story-panel {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 20px 28px;
+            }
+        }
+
+        #story-text {
+            font-size: 1.15rem;
+            line-height: 1.45;
+            font-weight: 800;
+            color: #f8fafc;
+            flex: 1;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        @media (min-width: 768px) {
+            #story-text {
+                font-size: 1.3rem;
+            }
+        }
+
+        .controls-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .comic-btn {
+            font-family: 'Bangers', cursive;
+            font-size: 1.45rem;
+            letter-spacing: 1.5px;
+            padding: 12px 28px;
+            border-radius: 14px;
+            border: 4px solid #000000;
+            cursor: pointer;
+            box-shadow: 5px 5px 0px #000000;
+            transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            touch-action: manipulation;
+        }
+
+        .comic-btn:active, .comic-btn.pressed {
+            transform: translate(4px, 4px);
+            box-shadow: 1px 1px 0px #000000;
+        }
+
+        .btn-next {
+            background: linear-gradient(180deg, #fde047 0%, #eab308 100%);
+            color: #000000;
+        }
+
+        .btn-next:hover {
+            background: linear-gradient(180deg, #fef08a 0%, #facc15 100%);
+        }
+
+        .btn-lift {
+            background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #000;
+            min-width: 195px;
+            font-size: 1.55rem;
+        }
+
+        .btn-lift.blue-theme {
+            background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+        }
+
+        .btn-lift.purple-theme {
+            background: linear-gradient(180deg, #c084fc 0%, #7e22ce 100%);
+        }
+
+        /* Pantalla de transición Fade to Black */
+        #fade-overlay {
+            position: absolute;
+            inset: 0;
+            background: #000000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 40;
+            transition: opacity 0.55s ease-in-out;
+        }
+
+        /* Escena Final (Acto 10) Overlay con la imagen de Catbox */
+        #final-reveal-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            z-index: 35;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        #final-reveal-overlay.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        .final-frame {
+            position: relative;
+            max-width: 92%;
+            max-height: 76%;
+            border: 6px solid #facc15;
+            border-radius: 18px;
+            box-shadow: 0 0 50px rgba(250, 204, 21, 0.45), 10px 10px 0px #000;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: dramaticPop 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes dramaticPop {
+            0% { transform: scale(0.4) rotate(-4deg); opacity: 0; }
+            70% { transform: scale(1.04) rotate(1deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        #final-image {
+            display: block;
+            max-width: 100%;
+            max-height: 70vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .final-caption {
+            margin-top: 16px;
+            font-family: 'Bangers', cursive;
+            font-size: 1.8rem;
+            color: #facc15;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 0px #000;
+            text-align: center;
+        }
+
+        #restart-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: #22c55e;
+            color: #000;
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <!-- Canvas principal del juego -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Barra Superior -->
+    <div id="top-bar">
+        <div class="badge-act" id="act-badge">ACTO 1 / 10</div>
+        <button id="sound-btn" aria-label="Alternar sonido">
+            <span id="sound-icon">🔊</span>
+            <span id="sound-text">Sonido</span>
+        </button>
+    </div>
+
+    <!-- HUD de Repeticiones para Minijuegos -->
+    <div id="minigame-hud">
+        <div class="rep-counter-box">
+            <div class="rep-label" id="exercise-name">PRESS INCLINADO (DANIEL)</div>
+            <div class="rep-value"><span id="rep-count">0</span> / 10 REPS</div>
+        </div>
+        <div id="hold-warning">🔥 ¡MANTÉN PULSADO PARA SUBIR! 🔥</div>
+    </div>
+
+    <!-- Panel de Narrativa y Botones -->
+    <div id="story-panel">
+        <div id="story-text">Había una vez dos amigos que quisieron ponerse mamadísimos.</div>
+        <div class="controls-area">
+            <button id="next-btn" class="comic-btn btn-next">Siguiente ➔</button>
+            <button id="lift-btn" class="comic-btn btn-lift" style="display: none;">💪 ¡EMPUJAR!</button>
+        </div>
+    </div>
+
+    <!-- Capa de transición a negro -->
+    <div id="fade-overlay"></div>
+
+    <!-- Escena 10: Revelación Final con la imagen de Catbox -->
+    <div id="final-reveal-overlay">
+        <div class="final-frame">
+            <img id="final-image" src="https://files.catbox.moe/q25no4.jpg" alt="Lo que José encontró al subir las escaleras" onerror="this.onerror=null; this.src='https://placehold.co/800x600/0f172a/facc15?text=¡Sorpresa+Inesperada+en+el+Segundo+Piso!';">
+        </div>
+        <div class="final-caption">¡NO SE LO PODÍA CREER! 😱</div>
+        <button id="restart-btn" class="comic-btn">🔄 Volver a jugar</button>
+    </div>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * SISTEMA DE AUDIO SINTETIZADO (WEB AUDIO API)
+ * ============================================================================
+ */
+class SoundEngine {
+    constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.strainOsc = null;
+        this.strainGain = null;
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioCtx();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    toggleMute() {
+        this.muted = !this.muted;
+        if (this.muted) this.stopStrain();
+        return this.muted;
+    }
+
+    playClick() {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+    }
+
+    playLiftPop() {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(380, now + 0.16);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.16);
+    }
+
+    playRepComplete(isFinal = false) {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = isFinal ? [523.25, 659.25, 783.99, 1046.50] : [587.33, 880];
+        notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+            gain.gain.setValueAtTime(0.22, now + idx * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.25);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.07);
+            osc.stop(now + idx * 0.07 + 0.25);
+        });
+    }
+
+    startStrain() {
+        if (this.muted || this.strainOsc) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        this.strainOsc = this.ctx.createOscillator();
+        this.strainGain = this.ctx.createGain();
+        this.strainOsc.type = 'sawtooth';
+        this.strainOsc.frequency.setValueAtTime(95, now);
+        this.strainGain.gain.setValueAtTime(0.06, now);
+        this.strainOsc.connect(this.strainGain);
+        this.strainGain.connect(this.ctx.destination);
+        this.strainOsc.start(now);
+    }
+
+    updateStrain(progress) {
+        if (this.strainOsc && this.ctx && !this.muted) {
+            const now = this.ctx.currentTime;
+            this.strainOsc.frequency.setTargetAtTime(95 + progress * 140, now, 0.05);
+            this.strainGain.gain.setTargetAtTime(0.06 + progress * 0.07, now, 0.05);
+        }
+    }
+
+    stopStrain() {
+        if (this.strainOsc) {
+            try {
+                this.strainOsc.stop();
+                this.strainOsc.disconnect();
+            } catch (e) {}
+            this.strainOsc = null;
+            this.strainGain = null;
+        }
+    }
+
+    playShock() {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        // Acorde disonante de impacto dramático
+        const freqs = [110, 116.54, 155.56, 220, 466.16];
+        freqs.forEach((f) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(f * 1.3, now);
+            osc.frequency.exponentialRampToValueAtTime(f * 0.75, now + 0.9);
+            gain.gain.setValueAtTime(0.16, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 1.1);
+        });
+    }
+}
+
+const sfx = new SoundEngine();
+
+/**
+ * ============================================================================
+ * CONFIGURACIÓN Y ESTADO DEL JUEGO
+ * ============================================================================
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const actBadge = document.getElementById('act-badge');
+const storyText = document.getElementById('story-text');
+const nextBtn = document.getElementById('next-btn');
+const liftBtn = document.getElementById('lift-btn');
+const minigameHud = document.getElementById('minigame-hud');
+const exerciseNameEl = document.getElementById('exercise-name');
+const repCountEl = document.getElementById('rep-count');
+const holdWarningEl = document.getElementById('hold-warning');
+const fadeOverlay = document.getElementById('fade-overlay');
+const finalRevealOverlay = document.getElementById('final-reveal-overlay');
+const storyPanel = document.getElementById('story-panel');
+const soundBtn = document.getElementById('sound-btn');
+const restartBtn = document.getElementById('restart-btn');
+
+const SCENES = {
+    1: {
+        type: 'cutscene',
+        text: 'Había una vez dos amigos que quisieron ponerse mamadísimos.'
+    },
+    2: {
+        type: 'cutscene',
+        text: 'Ambos se esforzaron bastante para mejorarse física y mentalmente.'
+    },
+    3: {
+        type: 'minigame',
+        exercise: 'PRESS INCLINADO DE PECHO (DANIEL)',
+        btnText: '💪 ¡EMPUJAR!',
+        btnTheme: '',
+        text: 'Mientras su fuerza aumenta, su amistad incrementa.',
+        holdThreshold: 7 // De la 1 a la 7 un clic; en las últimas tres (8, 9 y 10) requiere mantener pulsado
+    },
+    4: {
+        type: 'minigame',
+        exercise: 'PRESS MILITAR DE HOMBRO (JOSÉ)',
+        btnText: '🔥 ¡SUBIR MANCUERNAS!',
+        btnTheme: 'blue-theme',
+        text: 'Fortaleciendo sus hombros, sus músculos y sobre todo su ímpetu.',
+        holdThreshold: 7 // De la 1 a la 7 un clic; en las últimas tres (8, 9 y 10) requiere mantener pulsado
+    },
+    5: {
+        type: 'minigame',
+        exercise: 'CURL DE BÍCEPS CON BARRA (AMBOS)',
+        btnText: '⚡ ¡SUBIR BARRAS!',
+        btnTheme: 'purple-theme',
+        text: 'Juntos lograrán volverse los más fuertes del mundo.',
+        holdThreshold: 7 // De la 1 a la 7 un clic; en las últimas tres (8, 9 y 10) requiere mantener pulsado
+    },
+    6: {
+        type: 'cutscene',
+        text: 'Justo en el momento de irse se dan cuenta de algo importante, que a su amigo José se le perdió su botella de agua.'
+    },
+    7: {
+        type: 'cutscene',
+        text: 'José le dice a Daniel: "Ya vengo, hermano, voy a buscar mi botella de agua."'
+    },
+    8: {
+        type: 'cutscene',
+        text: 'Ya que no la encontró decidió buscar y subir.'
+    },
+    9: {
+        type: 'cutscene',
+        text: 'Cuando subió las escaleras lo que se encontró no se lo iba a imaginar...'
+    },
+    10: {
+        type: 'final',
+        text: ''
+    }
+};
+
+const state = {
+    currentAct: 1,
+    time: 0,
+    isTransitioning: false,
+    // Estado de minijuegos
+    reps: 0,
+    liftProgress: 0,      // 0 (abajo) a 1 (arriba)
+    liftPhase: 'idle',    // 'idle', 'auto_up', 'auto_down', 'holding_up', 'reached_top', 'lowering'
+    isHoldingButton: false,
+    sweatDrops: [],
+    floatingTexts: []
+};
+
+// Ajuste responsivo del Canvas con soporte Retina/HiDPI
+function resizeCanvas() {
+    const wrapper = document.getElementById('game-wrapper');
+    const rect = wrapper.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+/**
+ * ============================================================================
+ * LÓGICA DE NAVEGACIÓN Y MINIJUEGOS
+ * ============================================================================
+ */
+function loadAct(actNumber, withFade = false) {
+    if (withFade) {
+        if (state.isTransitioning) return;
+        state.isTransitioning = true;
+        sfx.stopStrain();
+        fadeOverlay.style.opacity = '1';
+        setTimeout(() => {
+            applyActState(actNumber);
+            setTimeout(() => {
+                fadeOverlay.style.opacity = '0';
+                state.isTransitioning = false;
+            }, 120);
+        }, 560);
+    } else {
+        applyActState(actNumber);
+    }
+}
+
+function applyActState(actNumber) {
+    state.currentAct = actNumber;
+    state.reps = 0;
+    state.liftProgress = 0;
+    state.liftPhase = 'idle';
+    state.isHoldingButton = false;
+    state.sweatDrops = [];
+    state.floatingTexts = [];
+
+    const scene = SCENES[actNumber];
+    actBadge.textContent = `ACTO ${actNumber} / 10`;
+
+    if (scene.type === 'final') {
+        storyPanel.style.display = 'none';
+        minigameHud.style.display = 'none';
+        finalRevealOverlay.classList.add('visible');
+        sfx.playShock();
+        return;
+    } else {
+        finalRevealOverlay.classList.remove('visible');
+        storyPanel.style.display = 'flex';
+        storyText.textContent = scene.text;
+    }
+
+    if (scene.type === 'cutscene') {
+        minigameHud.style.display = 'none';
+        nextBtn.style.display = 'inline-flex';
+        liftBtn.style.display = 'none';
+        if (actNumber === 9) {
+            sfx.playShock();
+        }
+    } else if (scene.type === 'minigame') {
+        minigameHud.style.display = 'flex';
+        exerciseNameEl.textContent = scene.exercise;
+        repCountEl.textContent = '0';
+        holdWarningEl.style.display = 'none';
+        nextBtn.style.display = 'none';
+        liftBtn.style.display = 'inline-flex';
+        liftBtn.textContent = scene.btnText;
+        liftBtn.className = 'comic-btn btn-lift ' + (scene.btnTheme || '');
+    }
+}
+
+function isHoldRequired() {
+    const scene = SCENES[state.currentAct];
+    if (!scene || scene.type !== 'minigame') return false;
+    return state.reps >= scene.holdThreshold;
+}
+
+function updateHoldWarningUI() {
+    if (isHoldRequired() && state.reps < 10) {
+        holdWarningEl.style.display = 'block';
+    } else {
+        holdWarningEl.style.display = 'none';
+    }
+}
+
+function spawnSweat(x, y, count = 2) {
+    for (let i = 0; i < count; i++) {
+        state.sweatDrops.push({
+            x: x + (Math.random() - 0.5) * 40,
+            y: y + (Math.random() - 0.5) * 20,
+            vx: (Math.random() - 0.5) * 140,
+            vy: -60 - Math.random() * 90,
+            life: 1.0
+        });
+    }
+}
+
+function spawnFloatingText(text, x, y, color = '#facc15') {
+    state.floatingTexts.push({
+        text,
+        x,
+        y,
+        vy: -55,
+        life: 1.0,
+        color
+    });
+}
+
+function completeOneRep() {
+    state.reps++;
+    repCountEl.textContent = state.reps;
+    const isFinalRep = state.reps >= 10;
+    sfx.playRepComplete(isFinalRep);
+
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    spawnFloatingText(isFinalRep ? '¡10/10 BRUTAL!' : `+1 REP (${state.reps}/10)`, w * 0.5, h * 0.34, isFinalRep ? '#4ade80' : '#facc15');
+
+    updateHoldWarningUI();
+
+    if (isFinalRep) {
+        state.isHoldingButton = false;
+        sfx.stopStrain();
+        liftBtn.disabled = true;
+        setTimeout(() => {
+            liftBtn.disabled = false;
+            loadAct(state.currentAct + 1, true);
+        }, 700);
+    }
+}
+
+// Eventos del botón "Siguiente"
+nextBtn.addEventListener('click', () => {
+    if (state.isTransitioning) return;
+    sfx.playClick();
+    if (state.currentAct < 10) {
+        loadAct(state.currentAct + 1, state.currentAct === 9);
+    }
+});
+
+// Eventos del botón de levantamiento (Mouse + Touch unificados)
+function handleLiftPressStart(e) {
+    if (e.cancelable) e.preventDefault();
+    if (state.isTransitioning || state.reps >= 10) return;
+
+    liftBtn.classList.add('pressed');
+    state.isHoldingButton = true;
+
+    if (!isHoldRequired()) {
+        // Modo clic simple rápido
+        if (state.liftPhase === 'idle') {
+            state.liftPhase = 'auto_up';
+            sfx.playLiftPop();
+        }
+    } else {
+        // Modo mantener pulsado con esfuerzo
+        if (state.liftPhase === 'idle' || state.liftPhase === 'lowering') {
+            state.liftPhase = 'holding_up';
+            sfx.startStrain();
+        }
+    }
+}
+
+function handleLiftPressEnd(e) {
+    if (e && e.cancelable) e.preventDefault();
+    liftBtn.classList.remove('pressed');
+    state.isHoldingButton = false;
+    sfx.stopStrain();
+
+    if (isHoldRequired()) {
+        if (state.liftPhase === 'reached_top') {
+            // Llegó arriba del todo y soltó: baja la pesa y cuenta la repetición
+            state.liftPhase = 'lowering_success';
+        } else if (state.liftPhase === 'holding_up') {
+            // Soltó antes de llegar arriba: baja sin contar
+            state.liftPhase = 'lowering';
+            const w = canvas.clientWidth;
+            const h = canvas.clientHeight;
+            spawnFloatingText('¡Sube hasta arriba!', w * 0.5, h * 0.42, '#fb7185');
+        }
+    }
+}
+
+liftBtn.addEventListener('mousedown', handleLiftPressStart);
+window.addEventListener('mouseup', () => {
+    if (state.isHoldingButton) handleLiftPressEnd();
+});
+liftBtn.addEventListener('touchstart', handleLiftPressStart, { passive: false });
+window.addEventListener('touchend', () => {
+    if (state.isHoldingButton) handleLiftPressEnd();
+});
+window.addEventListener('touchcancel', () => {
+    if (state.isHoldingButton) handleLiftPressEnd();
+});
+
+// Sonido y Reinicio
+soundBtn.addEventListener('click', () => {
+    const muted = sfx.toggleMute();
+    document.getElementById('sound-icon').textContent = muted ? '🔇' : '🔊';
+    document.getElementById('sound-text').textContent = muted ? 'Silencio' : 'Sonido';
+});
+
+restartBtn.addEventListener('click', () => {
+    sfx.playClick();
+    loadAct(1, true);
+});
+
+/**
+ * ============================================================================
+ * ACTUALIZACIÓN DE FÍSICA Y ANIMACIÓN POR FRAME
+ * ============================================================================
+ */
+function update(dt) {
+    state.time += dt;
+
+    // Actualizar partículas de sudor
+    for (let i = state.sweatDrops.length - 1; i >= 0; i--) {
+        const p = state.sweatDrops[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 320 * dt;
+        p.life -= dt * 1.4;
+        if (p.life <= 0) state.sweatDrops.splice(i, 1);
+    }
+
+    // Actualizar textos flotantes
+    for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+        const ft = state.floatingTexts[i];
+        ft.y += ft.vy * dt;
+        ft.life -= dt * 1.1;
+        if (ft.life <= 0) state.floatingTexts.splice(i, 1);
+    }
+
+    // Lógica de movimiento de pesas en minijuegos
+    const scene = SCENES[state.currentAct];
+    if (scene && scene.type === 'minigame') {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+
+        if (state.liftPhase === 'auto_up') {
+            state.liftProgress += dt * 4.5;
+            if (state.liftProgress >= 1) {
+                state.liftProgress = 1;
+                state.liftPhase = 'auto_down';
+            }
+        } else if (state.liftPhase === 'auto_down') {
+            state.liftProgress -= dt * 4.2;
+            if (state.liftProgress <= 0) {
+                state.liftProgress = 0;
+                state.liftPhase = 'idle';
+                completeOneRep();
+            }
+        } else if (state.liftPhase === 'holding_up') {
+            // Subida lenta con esfuerzo
+            const climbSpeed = 0.68; // ~1.45 segundos de esfuerzo continuo
+            state.liftProgress += dt * climbSpeed;
+            sfx.updateStrain(state.liftProgress);
+
+            if (Math.random() < dt * 7) {
+                spawnSweat(w * 0.5, h * 0.42, 1);
+            }
+
+            if (state.liftProgress >= 1) {
+                state.liftProgress = 1;
+                state.liftPhase = 'reached_top';
+                sfx.stopStrain();
+                spawnFloatingText('¡ARRIBA! ¡SUELTA!', w * 0.5, h * 0.36, '#38bdf8');
+            }
+        } else if (state.liftPhase === 'reached_top') {
+            // Esperando a que el jugador suelte el botón para bajar la repetición
+            if (Math.random() < dt * 5) {
+                spawnSweat(w * 0.5, h * 0.42, 1);
+            }
+        } else if (state.liftPhase === 'lowering_success') {
+            state.liftProgress -= dt * 3.2;
+            if (state.liftProgress <= 0) {
+                state.liftProgress = 0;
+                state.liftPhase = 'idle';
+                completeOneRep();
+            }
+        } else if (state.liftPhase === 'lowering') {
+            state.liftProgress -= dt * 2.8;
+            if (state.liftProgress <= 0) {
+                state.liftProgress = 0;
+                state.liftPhase = 'idle';
+            }
+        }
+    }
+}
+
+/**
+ * ============================================================================
+ * MOTOR DE DIBUJO VECTORIAL 2D (ESTILO CÓMIC VIBRANTE)
+ * ============================================================================
+ */
+function drawOutlinedRect(x, y, w, h, fill, radius = 0, lineWidth = 3.5) {
+    ctx.beginPath();
+    if (radius > 0 && ctx.roundRect) {
+        ctx.roundRect(x, y, w, h, radius);
+    } else {
+        ctx.rect(x, y, w, h);
+    }
+    if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+    }
+    if (lineWidth > 0) {
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
+    }
+}
+
+function drawOutlinedCircle(x, y, r, fill, lineWidth = 3.5) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+    }
+    if (lineWidth > 0) {
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
+    }
+}
+
+function drawCloud(x, y, scale) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 28, Math.PI * 0.5, Math.PI * 1.5);
+    ctx.arc(28, -14, 34, Math.PI * 1, Math.PI * 1.9);
+    ctx.arc(64, -6, 26, Math.PI * 1.2, Math.PI * 0.3);
+    ctx.arc(46, 12, 24, 0, Math.PI * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+}
+
+// Fondo interior del gimnasio reutilizable
+function drawGymInterior(w, h) {
+    // Pared superior azul grisáceo
+    const wallGrad = ctx.createLinearGradient(0, 0, 0, h * 0.72);
+    wallGrad.addColorStop(0, '#334155');
+    wallGrad.addColorStop(1, '#475569');
+    ctx.fillStyle = wallGrad;
+    ctx.fillRect(0, 0, w, h * 0.72);
+
+    // Franja decorativa amarilla/negra estilo gym
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(0, h * 0.56, w, 14);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, h * 0.56, w, 3);
+    ctx.fillRect(0, h * 0.56 + 14, w, 3);
+
+    // Grandes espejos del gimnasio
+    const mirrorCount = 3;
+    const mirrorW = Math.min(240, w * 0.25);
+    const mirrorH = h * 0.36;
+    const gap = (w - mirrorCount * mirrorW) / (mirrorCount + 1);
+    for (let i = 0; i < mirrorCount; i++) {
+        const mx = gap + i * (mirrorW + gap);
+        const my = h * 0.14;
+        drawOutlinedRect(mx, my, mirrorW, mirrorH, '#bae6fd', 8, 4);
+        // Reflejos diagonales en espejo
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(mx + 4, my + 4, mirrorW - 8, mirrorH - 8);
+        ctx.clip();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.beginPath();
+        ctx.moveTo(mx + 20, my);
+        ctx.lineTo(mx + 55, my);
+        ctx.lineTo(mx + 15, my + mirrorH);
+        ctx.lineTo(mx - 20, my + mirrorH);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Suelo de caucho oscuro con puntos
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, h * 0.72, w, h * 0.28);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.72);
+    ctx.lineTo(w, h * 0.72);
+    ctx.stroke();
+
+    // Rack de mancuernas al fondo a la izquierda
+    const rackX = w * 0.06;
+    const rackY = h * 0.58;
+    drawOutlinedRect(rackX, rackY, 110, h * 0.14, '#0f172a', 4, 3);
+    for (let i = 0; i < 4; i++) {
+        drawOutlinedCircle(rackX + 20 + i * 23, rackY + 12, 9, '#64748b', 2.5);
+        drawOutlinedCircle(rackX + 20 + i * 23, rackY + 38, 11, '#475569', 2.5);
+    }
+}
+
+// Dibuja una pesa / barra con discos
+function drawBarbell(cx, cy, width, plateRadius = 26) {
+    // Barra metálica
+    drawOutlinedRect(cx - width / 2, cy - 5, width, 10, '#cbd5e1', 4, 3);
+    // Discos izquierdos
+    drawOutlinedRect(cx - width * 0.38 - 10, cy - plateRadius, 12, plateRadius * 2, '#1e293b', 4, 3);
+    drawOutlinedRect(cx - width * 0.38 - 22, cy - plateRadius * 0.78, 10, plateRadius * 1.56, '#ef4444', 3, 3);
+    // Discos derechos
+    drawOutlinedRect(cx + width * 0.38 - 2, cy - plateRadius, 12, plateRadius * 2, '#1e293b', 4, 3);
+    drawOutlinedRect(cx + width * 0.38 + 12, cy - plateRadius * 0.78, 10, plateRadius * 1.56, '#ef4444', 3, 3);
+}
+
+// Dibuja una mancuerna individual
+function drawDumbbell(cx, cy, angle = 0) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    drawOutlinedRect(-24, -4, 48, 8, '#cbd5e1', 3, 2.5);
+    drawOutlinedRect(-28, -14, 10, 28, '#1e293b', 3, 3);
+    drawOutlinedRect(18, -14, 10, 28, '#1e293b', 3, 3);
+    ctx.restore();
+}
+
+/**
+ * Dibuja la etiqueta flotante con el nombre encima de la cabeza del personaje
+ */
+function drawNameTag(x, y, name, bgColor) {
+    ctx.save();
+    ctx.font = '900 18px "Bangers", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const textWidth = ctx.measureText(name).width;
+    const boxW = Math.max(66, textWidth + 22);
+    const boxH = 26;
+
+    // Fondo estilo placa de cómic
+    drawOutlinedRect(x - boxW / 2, y - boxH / 2, boxW, boxH, bgColor, 8, 2.5);
+
+    // Texto blanco con borde negro para máxima legibilidad
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(name, x, y + 1);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(name, x, y + 1);
+    ctx.restore();
+}
+
+/**
+ * Dibujo de personaje estilizado tipo cómic
+ * who: 'jose' (camiseta azul #2563eb, shorts negros #111827, cabello castaño oscuro)
+ *      'daniel' (camiseta roja #dc2626, shorts grises #64748b, cabello negro)
+ */
+function drawCharacterStanding(x, y, scale, who, options = {}) {
+    const {
+        facing = 'front', // 'front', 'back', 'left', 'right'
+        expression = 'happy', // 'happy', 'strain', 'shock', 'wave'
+        leftArmAngle = 0.2,
+        rightArmAngle = -0.2,
+        walkPhase = 0,
+        shakeX = 0,
+        showName = true
+    } = options;
+
+    const shirtColor = who === 'jose' ? '#2563eb' : '#dc2626';
+    const shortsColor = who === 'jose' ? '#111827' : '#64748b';
+    const hairColor = who === 'jose' ? '#3f2e21' : '#0f172a';
+    const skinColor = who === 'jose' ? '#f5cba7' : '#eab68d';
+
+    ctx.save();
+    ctx.translate(x + shakeX, y);
+    ctx.scale(scale, scale);
+
+    const legSwing = Math.sin(walkPhase) * 12;
+
+    // Piernas
+    drawOutlinedRect(-24, 45 + legSwing * 0.3, 18, 52, skinColor, 8, 3.5);
+    drawOutlinedRect(6, 45 - legSwing * 0.3, 18, 52, skinColor, 8, 3.5);
+
+    // Tenis deportivos
+    drawOutlinedRect(-28, 92 + legSwing * 0.3, 24, 14, who === 'jose' ? '#3b82f6' : '#ef4444', 6, 3.5);
+    drawOutlinedRect(4, 92 - legSwing * 0.3, 24, 14, who === 'jose' ? '#3b82f6' : '#ef4444', 6, 3.5);
+
+    // Shorts
+    drawOutlinedRect(-28, 22, 56, 32, shortsColor, 8, 3.5);
+
+    // Torso musculoso (trapecio invertido)
+    ctx.beginPath();
+    ctx.moveTo(-36, -38);
+    ctx.lineTo(36, -38);
+    ctx.lineTo(26, 26);
+    ctx.lineTo(-26, 26);
+    ctx.closePath();
+    ctx.fillStyle = shirtColor;
+    ctx.fill();
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#000000';
+    ctx.stroke();
+
+    // Detalle de pecho / dorsal en la camiseta
+    if (facing !== 'back') {
+        ctx.beginPath();
+        ctx.arc(-12, -16, 12, 0.2, Math.PI - 0.2);
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(12, -16, 12, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+    }
+
+    // Brazo Izquierdo
+    ctx.save();
+    ctx.translate(-36, -28);
+    ctx.rotate(leftArmAngle);
+    drawOutlinedRect(-10, 0, 20, 48, skinColor, 9, 3.5);
+    drawOutlinedCircle(0, 48, 10, skinColor, 3.5);
+    ctx.restore();
+
+    // Brazo Derecho
+    ctx.save();
+    ctx.translate(36, -28);
+    ctx.rotate(rightArmAngle);
+    drawOutlinedRect(-10, 0, 20, 48, skinColor, 9, 3.5);
+    drawOutlinedCircle(0, 48, 10, skinColor, 3.5);
+    ctx.restore();
+
+    // Cabeza
+    drawOutlinedCircle(0, -64, 26, skinColor, 3.5);
+
+    // Cabello
+    if (facing === 'back') {
+        drawOutlinedCircle(0, -68, 27, hairColor, 3.5);
+    } else {
+        ctx.beginPath();
+        ctx.arc(0, -70, 26, Math.PI * 0.95, Math.PI * 2.05);
+        ctx.lineTo(24, -64);
+        ctx.quadraticCurveTo(0, -76, -24, -64);
+        ctx.closePath();
+        ctx.fillStyle = hairColor;
+        ctx.fill();
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+
+        // Expresión facial
+        const lookOffset = facing === 'left' ? -6 : (facing === 'right' ? 6 : 0);
+        if (expression === 'happy' || expression === 'wave') {
+            drawOutlinedCircle(-8 + lookOffset, -64, 3.5, '#000', 0);
+            drawOutlinedCircle(8 + lookOffset, -64, 3.5, '#000', 0);
+            ctx.beginPath();
+            ctx.arc(lookOffset, -56, 9, 0.15 * Math.PI, 0.85 * Math.PI);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#000';
+            ctx.stroke();
+        } else if (expression === 'strain') {
+            // Ojos apretados > <
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-13, -68); ctx.lineTo(-5, -64); ctx.lineTo(-13, -60);
+            ctx.moveTo(13, -68); ctx.lineTo(5, -64); ctx.lineTo(13, -60);
+            ctx.stroke();
+            // Boca apretada de esfuerzo
+            drawOutlinedRect(-10, -55, 20, 8, '#ffffff', 4, 2.5);
+        } else if (expression === 'shock') {
+            drawOutlinedCircle(-9, -64, 6.5, '#ffffff', 2.5);
+            drawOutlinedCircle(9, -64, 6.5, '#ffffff', 2.5);
+            drawOutlinedCircle(-9, -64, 2.5, '#000', 0);
+            drawOutlinedCircle(9, -64, 2.5, '#000', 0);
+            drawOutlinedCircle(0, -50, 7, '#7f1d1d', 2.5);
+        }
+    }
+
+    ctx.restore();
+
+    // Etiqueta con el nombre encima de su cabeza
+    if (showName) {
+        const label = who === 'jose' ? 'JOSÉ' : 'DANIEL';
+        drawNameTag(x + shakeX, y - 114 * scale, label, shirtColor);
+    }
+}
+
+function renderScene1(w, h) {
+    // Cielo azul vibrante
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.72);
+    skyGrad.addColorStop(0, '#0284c7');
+    skyGrad.addColorStop(1, '#7dd3fc');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h * 0.72);
+
+    // Sol radiante
+    drawOutlinedCircle(w * 0.14, h * 0.16, 36, '#fde047', 3.5);
+
+    // Nubes flotando suavemente
+    const drift = (state.time * 14) % (w + 200);
+    drawCloud((w * 0.25 + drift) % (w + 150) - 70, h * 0.18, 0.9);
+    drawCloud((w * 0.72 + drift * 0.7) % (w + 150) - 70, h * 0.14, 1.1);
+
+    // Césped / Acera
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(0, h * 0.72, w, h * 0.28);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0, h * 0.72, w, h * 0.12);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.72);
+    ctx.lineTo(w, h * 0.72);
+    ctx.stroke();
+
+    // Edificio / Casa del Gimnasio justo en el centro
+    const gymW = Math.min(340, w * 0.56);
+    const gymH = h * 0.36;
+    const gymX = (w - gymW) / 2;
+    const gymY = h * 0.72 - gymH;
+
+    // Cuerpo del edificio
+    drawOutlinedRect(gymX, gymY, gymW, gymH, '#f8fafc', 6, 4);
+    // Techo tipo casa / frontón
+    ctx.beginPath();
+    ctx.moveTo(gymX - 18, gymY);
+    ctx.lineTo(w / 2, gymY - 58);
+    ctx.lineTo(gymX + gymW + 18, gymY);
+    ctx.closePath();
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+
+    // Letrero gigante "GYM"
+    const signW = gymW * 0.68;
+    const signH = 44;
+    drawOutlinedRect(w / 2 - signW / 2, gymY + 18, signW, signH, '#facc15', 8, 3.5);
+    ctx.fillStyle = '#000000';
+    ctx.font = '900 30px "Bangers", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏋️ GYM 🏋️', w / 2, gymY + 49);
+
+    // Ventanas laterales
+    drawOutlinedRect(gymX + 22, gymY + 80, 52, 54, '#bae6fd', 4, 3);
+    drawOutlinedRect(gymX + gymW - 74, gymY + 80, 52, 54, '#bae6fd', 4, 3);
+
+    // Puerta central abierta
+    const doorW = 84;
+    const doorH = gymH * 0.52;
+    drawOutlinedRect(w / 2 - doorW / 2, gymY + gymH - doorH, doorW, doorH, '#1e293b', 4, 3.5);
+
+    // Dos amigos de espaldas entrando al GYM (José azul a la izquierda, Daniel rojo a la derecha)
+    const walkBob = Math.abs(Math.sin(state.time * 5)) * 5;
+    drawCharacterStanding(w / 2 - 34, h * 0.70 - walkBob, 0.78, 'jose', {
+        facing: 'back',
+        walkPhase: state.time * 6
+    });
+    drawCharacterStanding(w / 2 + 34, h * 0.70 - walkBob, 0.78, 'daniel', {
+        facing: 'back',
+        walkPhase: state.time * 6 + Math.PI
+    });
+}
+
+function renderScene2(w, h) {
+    // Interior del gym: Uno acostado levantando pesas de pecho (Daniel) y el otro parado ayudándolo (José)
+    drawGymInterior(w, h);
+
+    const cx = w * 0.48;
+    const floorY = h * 0.74;
+
+    // José (azul) parado al lado izquierdo cuidando/ayudando (spotter)
+    const spotterDip = Math.sin(state.time * 3.5) * 4;
+    drawCharacterStanding(cx - 115, floorY - 102 + spotterDip, 0.98, 'jose', {
+        facing: 'right',
+        expression: 'happy',
+        leftArmAngle: -0.9,
+        rightArmAngle: -1.1
+    });
+
+    // Banco plano de pesas
+    drawOutlinedRect(cx - 75, floorY - 46, 175, 18, '#1e293b', 6, 3.5);
+    drawOutlinedRect(cx - 60, floorY - 28, 16, 28, '#0f172a', 2, 3.5);
+    drawOutlinedRect(cx + 68, floorY - 28, 16, 28, '#0f172a', 2, 3.5);
+
+    // Soporte de la barra
+    drawOutlinedRect(cx - 42, floorY - 110, 12, 110, '#64748b', 3, 3.5);
+
+    // Daniel (rojo) acostado en el banco levantando pesas de pecho
+    const pressOffset = (Math.sin(state.time * 3.5) + 1) * 0.5 * 45;
+
+    ctx.save();
+    ctx.translate(cx, floorY - 56);
+    // Piernas dobladas apoyadas en el suelo
+    drawOutlinedRect(85, -4, 38, 16, '#64748b', 6, 3.5);
+    drawOutlinedRect(112, 4, 16, 46, '#eab68d', 6, 3.5);
+    drawOutlinedRect(110, 44, 26, 12, '#ef4444', 5, 3.5);
+    // Torso acostado
+    drawOutlinedRect(-55, -14, 145, 24, '#dc2626', 10, 3.5);
+    // Cabeza de Daniel
+    drawOutlinedCircle(-72, -4, 20, '#eab68d', 3.5);
+    // Brazos empujando hacia arriba
+    drawOutlinedRect(-38, -58 - pressOffset, 16, 48 + pressOffset, '#eab68d', 7, 3.5);
+    ctx.restore();
+
+    // Barra con discos subiendo y bajando
+    drawBarbell(cx - 30, floorY - 118 - pressOffset, 180, 26);
+
+    // Nombre de Daniel encima de su cabeza acostada
+    drawNameTag(cx - 72, floorY - 96, 'DANIEL', '#dc2626');
+}
+
+function renderScene3(w, h) {
+    // Minijuego 1: Daniel haciendo Press Inclinado, José al lado apoyando y sonriendo
+    drawGymInterior(w, h);
+
+    const cx = w * 0.44;
+    const floorY = h * 0.74;
+    const liftY = state.liftProgress * 56;
+    const isStraining = isHoldRequired() && (state.liftPhase === 'holding_up' || state.liftPhase === 'reached_top');
+    const shake = isStraining ? (Math.random() - 0.5) * 6 : 0;
+
+    // José (azul) parado al lado derecho viéndolo, apoyándolo y sonriendo
+    drawCharacterStanding(w * 0.72, floorY - 102, 1.0, 'jose', {
+        facing: 'left',
+        expression: 'happy',
+        leftArmAngle: -2.4, // brazo levantado animando
+        rightArmAngle: 0.25
+    });
+
+    // Globo de ánimo de José
+    if (state.liftProgress > 0.2) {
+        drawOutlinedRect(w * 0.65, floorY - 275, 145, 42, '#ffffff', 14, 3);
+        ctx.fillStyle = '#000';
+        ctx.font = '800 16px "Nunito", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('¡Tú puedes, bro! 💪', w * 0.65 + 72, floorY - 250);
+    }
+
+    // --- BANCO INCLINADO Y SOPORTES ---
+    ctx.save();
+    ctx.translate(cx, floorY);
+
+    // Soporte trasero para la barra inclinada
+    drawOutlinedRect(-72, -138, 12, 138, '#64748b', 3, 3.5);
+    drawOutlinedRect(-84, -12, 36, 12, '#0f172a', 3, 3.5);
+
+    // Base inferior del banco y patas
+    drawOutlinedRect(-75, -18, 165, 18, '#0f172a', 5, 3.5);
+    drawOutlinedRect(-55, -42, 14, 26, '#334155', 2, 3.5);
+    drawOutlinedRect(32, -42, 14, 26, '#334155', 2, 3.5);
+
+    // Cojín del asiento
+    drawOutlinedRect(10, -48, 62, 16, '#1e293b', 6, 3.5);
+
+    // Cojín del respaldo inclinado (40 grados)
+    ctx.save();
+    ctx.translate(14, -40);
+    ctx.rotate(-0.68);
+    drawOutlinedRect(-108, -10, 108, 16, '#1e293b', 6, 3.5);
+    ctx.restore();
+
+    // --- DANIEL (ROJO) BIEN ARTICULADO EN EL BANCO INCLINADO ---
+    // 1. Pierna y tenis apoyados firmemente en el suelo
+    drawOutlinedRect(24, -64, 48, 22, '#64748b', 8, 3.5); // Muslo (shorts)
+    drawOutlinedCircle(68, -53, 11, '#eab68d', 3.5); // Rodilla
+    drawOutlinedRect(59, -53, 18, 44, '#eab68d', 7, 3.5); // Pantorrilla
+    drawOutlinedRect(57, -14, 30, 14, '#ef4444', 6, 3.5); // Tenis rojo
+
+    // 2. Torso inclinado y cabeza conectados limpiamente
+    ctx.save();
+    ctx.translate(16, -50);
+    ctx.rotate(-0.68);
+
+    // Torso camiseta roja con pecho definido
+    ctx.beginPath();
+    ctx.moveTo(-88, -28);
+    ctx.lineTo(0, -24);
+    ctx.lineTo(0, 4);
+    ctx.lineTo(-88, 4);
+    ctx.closePath();
+    ctx.fillStyle = '#dc2626';
+    ctx.fill();
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#000000';
+    ctx.stroke();
+
+    // Cuello conectando torso y cabeza
+    drawOutlinedRect(-98, -20, 16, 16, '#eab68d', 4, 3);
+
+    // Cabeza de Daniel mirando hacia arriba/adelante
+    ctx.save();
+    ctx.translate(-112, -14);
+    ctx.rotate(0.45); // Ligera inclinación natural de cabeza
+    drawOutlinedCircle(0, 0, 22, '#eab68d', 3.5);
+
+    // Cabello negro de Daniel bien definido
+    ctx.beginPath();
+    ctx.arc(0, -4, 22, Math.PI * 0.85, Math.PI * 1.95);
+    ctx.lineTo(18, -8);
+    ctx.quadraticCurveTo(-2, -16, -20, -2);
+    ctx.closePath();
+    ctx.fillStyle = '#0f172a';
+    ctx.fill();
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#000000';
+    ctx.stroke();
+
+    // Expresión facial (de perfil/tres cuartos mirando la barra)
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2.8;
+    if (isStraining) {
+        // Ojo apretado de esfuerzo
+        ctx.beginPath();
+        ctx.moveTo(4, -8); ctx.lineTo(11, -4); ctx.lineTo(4, 0);
+        ctx.stroke();
+        // Boca apretada
+        drawOutlinedRect(2, 5, 12, 6, '#ffffff', 3, 2);
+    } else {
+        // Ojo concentrado y sonrisa
+        drawOutlinedCircle(8, -5, 3, '#000000', 0);
+        ctx.beginPath();
+        ctx.arc(7, 5, 7, 0.1, Math.PI * 0.75);
+        ctx.stroke();
+    }
+    ctx.restore();
+    ctx.restore();
+
+    // 3. Hombro, brazo articulado y mano sujetando la barra
+    const shoulderX = -42;
+    const shoulderY = -98;
+    const barY = shoulderY - 38 - liftY;
+
+    // Antebrazo / Brazo vertical empujando la barra
+    drawOutlinedRect(shoulderX - 9 + shake, barY, 18, shoulderY - barY + 6, '#eab68d', 8, 3.5);
+    // Hombro redondeado (manga roja)
+    drawOutlinedCircle(shoulderX + shake * 0.4, shoulderY, 13, '#dc2626', 3.5);
+
+    // Barra inclinada de pecho con discos
+    drawBarbell(shoulderX + shake, barY, 190, 28);
+
+    // Mano cerrando por encima de la barra
+    drawOutlinedCircle(shoulderX + shake, barY, 9, '#eab68d', 3);
+
+    ctx.restore();
+
+    // Nombre de Daniel encima de su cabeza en el banco inclinado
+    drawNameTag(cx - 76, floorY - 178, 'DANIEL', '#dc2626');
+}
+
+function renderScene4(w, h) {
+    // Minijuego 2: José haciendo Press Militar de Hombro con mancuernas a cada lado
+    drawGymInterior(w, h);
+
+    const cx = w * 0.50;
+    const floorY = h * 0.74;
+    const liftY = state.liftProgress * 56;
+    const isStraining = isHoldRequired() && (state.liftPhase === 'holding_up' || state.liftPhase === 'reached_top');
+    const shake = isStraining ? (Math.random() - 0.5) * 6 : 0;
+
+    // José (azul) de frente haciendo press militar
+    const armAngleOffset = state.liftProgress * 2.55;
+    drawCharacterStanding(cx, floorY - 104, 1.12, 'jose', {
+        facing: 'front',
+        expression: isStraining ? 'strain' : 'happy',
+        leftArmAngle: 0.45 + armAngleOffset,
+        rightArmAngle: -0.45 - armAngleOffset,
+        shakeX: shake
+    });
+
+    // Mancuernas en cada mano subiendo por encima de los hombros
+    const handSpread = 62 - state.liftProgress * 12;
+    const handY = floorY - 122 - liftY;
+    drawDumbbell(cx - handSpread + shake, handY, 0);
+    drawDumbbell(cx + handSpread + shake, handY, 0);
+}
+
+function renderScene5(w, h) {
+    // Minijuego 3: Ambos haciendo Curl de Bíceps con barra al unísono de frente
+    drawGymInterior(w, h);
+
+    const floorY = h * 0.74;
+    const curlY = state.liftProgress * 46;
+    const isStraining = isHoldRequired() && (state.liftPhase === 'holding_up' || state.liftPhase === 'reached_top');
+    const shake = isStraining ? (Math.random() - 0.5) * 6 : 0;
+
+    const joseX = w * 0.35;
+    const danielX = w * 0.65;
+
+    // José (izquierda, azul)
+    drawCharacterStanding(joseX, floorY - 104, 1.08, 'jose', {
+        facing: 'front',
+        expression: isStraining ? 'strain' : 'happy',
+        leftArmAngle: 0.25 + state.liftProgress * 1.3,
+        rightArmAngle: -0.25 - state.liftProgress * 1.3,
+        shakeX: shake
+    });
+    drawBarbell(joseX + shake, floorY - 82 - curlY, 155, 22);
+
+    // Daniel (derecha, rojo)
+    drawCharacterStanding(danielX, floorY - 104, 1.08, 'daniel', {
+        facing: 'front',
+        expression: isStraining ? 'strain' : 'happy',
+        leftArmAngle: 0.25 + state.liftProgress * 1.3,
+        rightArmAngle: -0.25 - state.liftProgress * 1.3,
+        shakeX: shake
+    });
+    drawBarbell(danielX + shake, floorY - 82 - curlY, 155, 22);
+}
+
+function renderScene6(w, h) {
+    // Salida/Recepción del gimnasio: ambos caminan despidiéndose y se detienen por la botella perdida
+    drawGymInterior(w, h);
+
+    // Puerta de salida a la derecha
+    drawOutlinedRect(w * 0.82, h * 0.24, w * 0.14, h * 0.48, '#7dd3fc', 6, 4);
+    drawOutlinedRect(w * 0.84, h * 0.17, w * 0.10, 32, '#22c55e', 6, 3);
+    ctx.fillStyle = '#000';
+    ctx.font = '900 18px "Bangers", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SALIDA ➔', w * 0.89, h * 0.17 + 22);
+
+    // Otras personas al fondo despidiéndose (compañero extra sin etiqueta de protagonista)
+    drawCharacterStanding(w * 0.18, h * 0.62, 0.72, 'daniel', {
+        facing: 'front',
+        expression: 'wave',
+        rightArmAngle: -2.5 + Math.sin(state.time * 8) * 0.25,
+        showName: false
+    });
+    // Camiseta verde para el compañero del fondo
+    drawOutlinedRect(w * 0.18 - 22, h * 0.62 - 26, 44, 42, '#10b981', 6, 3);
+
+    // José y Daniel caminando lado a lado y deteniéndose con sorpresa ("¿Y mi botella?")
+    drawCharacterStanding(w * 0.48, h * 0.64, 1.0, 'jose', {
+        facing: 'right',
+        expression: 'shock',
+        leftArmAngle: 0.3,
+        rightArmAngle: -0.9
+    });
+
+    drawCharacterStanding(w * 0.63, h * 0.64, 1.0, 'daniel', {
+        facing: 'right',
+        expression: 'wave',
+        rightArmAngle: -2.4 + Math.sin(state.time * 7) * 0.2
+    });
+
+    // Signo de interrogación / exclamación sobre José por su botella perdida
+    const pop = Math.sin(state.time * 5) * 4;
+    drawOutlinedRect(w * 0.44, h * 0.30 + pop, 54, 46, '#facc15', 12, 3.5);
+    ctx.fillStyle = '#000';
+    ctx.font = '900 28px "Bangers", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⁉️💧', w * 0.44 + 27, h * 0.30 + 32 + pop);
+}
+
+function renderScene7(w, h) {
+    // José voltea hacia atrás mirando a Daniel señalando adentro del gimnasio
+    drawGymInterior(w, h);
+
+    // Daniel esperando junto a la salida
+    drawCharacterStanding(w * 0.66, h * 0.64, 1.02, 'daniel', {
+        facing: 'left',
+        expression: 'happy',
+        leftArmAngle: 0.2,
+        rightArmAngle: 0.2
+    });
+
+    // José volteado hacia la izquierda señalando adentro del gimnasio
+    drawCharacterStanding(w * 0.44, h * 0.64, 1.02, 'jose', {
+        facing: 'left',
+        expression: 'happy',
+        leftArmAngle: 1.35, // señalando hacia el interior del gym
+        rightArmAngle: -0.2
+    });
+
+    // Bocadillo de diálogo sobre José
+    drawOutlinedRect(w * 0.24, h * 0.28, 230, 52, '#ffffff', 16, 3.5);
+    ctx.fillStyle = '#000';
+    ctx.font = '800 17px "Nunito", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('"¡Ya vengo, hermano!" 💧', w * 0.24 + 115, h * 0.28 + 32);
+}
+
+function renderScene8(w, h) {
+    // Escaleras hacia el segundo piso del gimnasio con José subiendo
+    drawGymInterior(w, h);
+
+    const stairStartX = w * 0.26;
+    const stairStartY = h * 0.72;
+    const steps = 7;
+    const stepW = (w * 0.48) / steps;
+    const stepH = (h * 0.44) / steps;
+
+    // Dibujar escalera diagonal ascendente
+    for (let i = 0; i < steps; i++) {
+        const sx = stairStartX + i * stepW;
+        const sy = stairStartY - (i + 1) * stepH;
+        drawOutlinedRect(sx, sy, stepW + 6, (i + 1) * stepH, '#475569', 2, 3.5);
+        // Huella amarilla antideslizante
+        drawOutlinedRect(sx, sy, stepW + 6, 8, '#facc15', 2, 2.5);
+    }
+
+    // Barandal / Pasamanos
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(stairStartX, stairStartY - 55);
+    ctx.lineTo(stairStartX + steps * stepW, stairStartY - steps * stepH - 55);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+
+    // José subiendo animadamente los escalones
+    const climbT = (state.time * 0.45) % 1;
+    const joseX = stairStartX + climbT * (steps * stepW * 0.85) + 35;
+    const joseY = stairStartY - climbT * (steps * stepH * 0.85) - 96;
+
+    drawCharacterStanding(joseX, joseY, 0.92, 'jose', {
+        facing: 'right',
+        expression: 'happy',
+        walkPhase: state.time * 10,
+        leftArmAngle: Math.sin(state.time * 10) * 0.5,
+        rightArmAngle: -Math.sin(state.time * 10) * 0.5
+    });
+}
+
+function renderScene9(w, h) {
+    // Primer plano dramático de José totalmente sorprendido con los ojos bien abiertos
+    const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.45, 30, w * 0.5, h * 0.45, w * 0.65);
+    bgGrad.addColorStop(0, '#fef08a');
+    bgGrad.addColorStop(0.45, '#f97316');
+    bgGrad.addColorStop(1, '#7f1d1d');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Líneas de velocidad / impacto estilo anime/cómic
+    ctx.save();
+    ctx.translate(w * 0.5, h * 0.44);
+    const rayCount = 28;
+    for (let i = 0; i < rayCount; i++) {
+        const angle = (i / rayCount) * Math.PI * 2 + state.time * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * 140, Math.sin(angle) * 140);
+        ctx.lineTo(Math.cos(angle - 0.04) * w, Math.sin(angle - 0.04) * w);
+        ctx.lineTo(Math.cos(angle + 0.04) * w, Math.sin(angle + 0.04) * w);
+        ctx.closePath();
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.22)';
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // Temblor dramático
+    const shakeX = (Math.random() - 0.5) * 7;
+    const shakeY = (Math.random() - 0.5) * 7;
+
+    ctx.save();
+    ctx.translate(w * 0.5 + shakeX, h * 0.58 + shakeY);
+    ctx.scale(2.1, 2.1);
+
+    // Hombros camiseta azul de José
+    drawOutlinedRect(-75, 20, 150, 90, '#2563eb', 24, 4);
+    // Cuello
+    drawOutlinedRect(-20, -10, 40, 38, '#f5cba7', 8, 3.5);
+    // Cabeza grande de José
+    drawOutlinedCircle(0, -56, 52, '#f5cba7', 4);
+    // Cabello castaño
+    ctx.beginPath();
+    ctx.arc(0, -66, 52, Math.PI * 0.95, Math.PI * 2.05);
+    ctx.lineTo(48, -56);
+    ctx.quadraticCurveTo(0, -82, -48, -56);
+    ctx.closePath();
+    ctx.fillStyle = '#3f2e21';
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+
+    // Ojos gigantes abiertos de asombro total
+    drawOutlinedCircle(-20, -54, 15, '#ffffff', 3.5);
+    drawOutlinedCircle(20, -54, 15, '#ffffff', 3.5);
+    // Pupilas contraídas por el shock
+    drawOutlinedCircle(-20, -54, 4.5, '#000000', 0);
+    drawOutlinedCircle(20, -54, 4.5, '#000000', 0);
+
+    // Cejas elevadas al máximo
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    ctx.arc(-20, -68, 16, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(20, -68, 16, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+
+    // Boca abierta en shock total
+    ctx.beginPath();
+    ctx.ellipse(0, -12, 16, 22, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fill();
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Etiqueta de JOSÉ encima de su cabeza en el primer plano dramático
+    drawNameTag(w * 0.5 + shakeX, h * 0.58 - 285 + shakeY, 'JOSÉ', '#2563eb');
+}
+
+/**
+ * ============================================================================
+ * BUCLE PRINCIPAL DE RENDERIZADO (60 FPS)
+ * ============================================================================
+ */
+let lastTimestamp = 0;
+
+function gameLoop(timestamp) {
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05);
+    lastTimestamp = timestamp;
+
+    update(dt);
+
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+
+    switch (state.currentAct) {
+        case 1: renderScene1(w, h); break;
+        case 2: renderScene2(w, h); break;
+        case 3: renderScene3(w, h); break;
+        case 4: renderScene4(w, h); break;
+        case 5: renderScene5(w, h); break;
+        case 6: renderScene6(w, h); break;
+        case 7: renderScene7(w, h); break;
+        case 8: renderScene8(w, h); break;
+        case 9: renderScene9(w, h); break;
+        default: break;
+    }
+
+    // Dibujar gotas de sudor activas
+    state.sweatDrops.forEach((p) => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        drawOutlinedCircle(p.x, p.y, 5, '#38bdf8', 2);
+        ctx.restore();
+    });
+
+    // Dibujar textos flotantes (+1 REP, etc.)
+    state.floatingTexts.forEach((ft) => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ft.life);
+        ctx.font = '900 28px "Bangers", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#000000';
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    });
+
+    requestAnimationFrame(gameLoop);
+}
+
+window.onload = function () {
+    loadAct(1, false);
+    requestAnimationFrame(gameLoop);
+};
+</script>
+</body>
+</html>
